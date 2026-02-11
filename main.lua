@@ -1,46 +1,66 @@
--- main.lua
-local success, Rayfield = pcall(function() 
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() 
-end)
-
-if not success then warn("Rayfield failed to load") return end
-
+-- main.lua | MATRIX HUB - STREET LIFE (ULTRA STABLE)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local BaseURL = "https://raw.githubusercontent.com/walterblack-lab/silent/main/"
 local buster = "?t=" .. tostring(tick())
 
--- Biztonságos betöltés
-pcall(function() getgenv().Environment = loadstring(game:HttpGet(BaseURL .. "Environment.lua" .. buster))() end)
-pcall(function() getgenv().MathUtils = loadstring(game:HttpGet(BaseURL .. "MathUtils.lua" .. buster))() end)
-pcall(function() getgenv().Hooks = loadstring(game:HttpGet(BaseURL .. "Hooks.lua" .. buster))() end)
-
--- Inicializálás
-if getgenv().MathUtils then getgenv().MathUtils.InitESP() end
-if getgenv().Hooks then getgenv().Hooks.Init() end
-
+-- 1. WINDOW LÉTREHOZÁSA ELŐRE
 local Window = Rayfield:CreateWindow({
     Name = "MATRIX HUB | STREET LIFE",
-    LoadingTitle = "Modular System",
+    LoadingTitle = "Rendszer ellenőrzése...",
     ConfigurationSaving = { Enabled = false }
 })
 
-local Tab = Window:CreateTab("Main")
+local Tab = Window:CreateTab("Beállítások")
 
+-- 2. MODULOK BETÖLTÉSE (Hibakezeléssel)
+local function SafeLoad(name)
+    local success, mod = pcall(function()
+        return loadstring(game:HttpGet(BaseURL .. name .. ".lua" .. buster))()
+    end)
+    if success then return mod else warn("Hiba betöltéskor: " .. name) return nil end
+end
+
+getgenv().Environment = SafeLoad("Environment")
+getgenv().MathUtils = SafeLoad("MathUtils")
+getgenv().Hooks = SafeLoad("Hooks")
+
+-- 3. INDÍTÁS
+pcall(function()
+    if getgenv().MathUtils then getgenv().MathUtils.InitESP() end
+    if getgenv().Hooks then getgenv().Hooks.Init() end
+end)
+
+-- 4. UI ELEMEK
 Tab:CreateToggle({
-    Name = "Silent Aim",
+    Name = "Silent Aim (F9 Log aktív)",
     CurrentValue = true,
     Callback = function(v) _G.SilentAimEnabled = v end
 })
 
 Tab:CreateToggle({
-    Name = "Show ESP",
+    Name = "ESP Megjelenítése",
     CurrentValue = true,
     Callback = function(v) _G.HeadESP = v end
 })
 
+Tab:CreateSlider({
+    Name = "FOV Méret",
+    Range = {50, 600},
+    Increment = 10,
+    CurrentValue = 150,
+    Callback = function(v) _G.FOVRadius = v end
+})
+
 Tab:CreateButton({
-    Name = "Unload",
+    Name = "Szkript Leállítása",
     Callback = function()
-        if getgenv().Environment then getgenv().Environment.Cleanup() end
-        Rayfield:Destroy()
+        pcall(function()
+            if getgenv().Hooks then getgenv().Hooks.Disable() end
+            if getgenv().Environment then getgenv().Environment.Cleanup() end
+            if getgenv().MathUtils then getgenv().MathUtils.ClearESP() end
+            Rayfield:Destroy()
+        end)
     end
 })
+
+Rayfield:Notify({Title = "Matrix Hub", Content = "Minden kész! Ha nincs menü, nézd az F9-et!", Duration = 5})
