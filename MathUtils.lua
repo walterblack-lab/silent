@@ -1,18 +1,18 @@
--- MathUtils.lua | Matrix Hub Core Logic & ESP
+-- MathUtils.lua
 local MathUtils = {}
 local LP = game:GetService("Players").LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
-
 local ESP_Dots = {}
 
--- 1. HEAD ESP
 function MathUtils.CreateESP(player)
+    if player == LP then return end
+    
     local dot = Drawing.new("Circle")
     dot.Visible = false
     dot.Color = Color3.fromRGB(255, 0, 0)
     dot.Thickness = 1
-    dot.Radius = 3
+    dot.Radius = 4
     dot.Filled = true
     dot.NumSides = 12
     
@@ -20,8 +20,10 @@ function MathUtils.CreateESP(player)
 
     local connection
     connection = RunService.RenderStepped:Connect(function()
-        if player.Character and player.Character:FindFirstChild("Head") and _G.HeadESP and player.Character.Humanoid.Health > 0 then
-            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+        if player.Character and player.Character:FindFirstChild("Head") and _G.HeadESP then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            
             if onScreen then
                 dot.Position = Vector2.new(screenPos.X, screenPos.Y)
                 dot.Visible = true
@@ -41,38 +43,27 @@ end
 
 function MathUtils.InitESP()
     for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LP then MathUtils.CreateESP(player) end
+        MathUtils.CreateESP(player)
     end
     game.Players.PlayerAdded:Connect(function(player)
-        if player ~= LP then MathUtils.CreateESP(player) end
+        MathUtils.CreateESP(player)
     end)
 end
 
 function MathUtils.ClearESP()
-    for _, dot in pairs(ESP_Dots) do dot:Remove() end
+    for player, dot in pairs(ESP_Dots) do
+        pcall(function() dot:Remove() end)
+    end
     table.clear(ESP_Dots)
 end
 
--- 2. LOGIKA
 function MathUtils.IsVisible(targetPart, character)
     if not _G.WallCheck then return true end
-    local origin = Camera.CFrame.Position
-    local destination = targetPart.Position
-    local direction = (destination - origin).Unit * (destination - origin).Magnitude
     local params = RaycastParams.new()
     params.FilterDescendantsInstances = {LP.Character, character, Camera}
     params.FilterType = Enum.RaycastFilterType.Exclude
-    local result = workspace:Raycast(origin, direction, params)
+    local result = workspace:Raycast(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position).Unit * 1000, params)
     return result == nil
-end
-
-function MathUtils.GetRandomBodyPart(character)
-    local chance = math.random(1, 100)
-    if chance <= (_G.HeadChance or 80) then
-        return character:FindFirstChild("Head")
-    else
-        return character:FindFirstChild("UpperTorso") or character:FindFirstChild("HumanoidRootPart")
-    end
 end
 
 function MathUtils.GetClosestTarget()
@@ -81,24 +72,19 @@ function MathUtils.GetClosestTarget()
     local mousePos = Vector2.new(LP:GetMouse().X, LP:GetMouse().Y)
 
     for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LP and player.Character and player.Character:FindFirstChild("Humanoid") then
-            if player.Character.Humanoid.Health > 0 then
-                local head = player.Character:FindFirstChild("Head")
-                if head then
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        local distToMouse = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                        if distToMouse < maxDistance and MathUtils.IsVisible(head, player.Character) then
-                            maxDistance = distToMouse
-                            closestTarget = player.Character
-                        end
-                    end
+        if player ~= LP and player.Character and player.Character:FindFirstChild("Head") then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local distToMouse = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                if distToMouse < maxDistance and MathUtils.IsVisible(head, player.Character) then
+                    maxDistance = distToMouse
+                    closestTarget = head
                 end
             end
         end
     end
-    if closestTarget then return MathUtils.GetRandomBodyPart(closestTarget) end
-    return nil
+    return closestTarget
 end
 
 return MathUtils
