@@ -1,25 +1,18 @@
--- main.lua | MATRIX HUB - SILENT AIM FIXED
+-- main.lua | MATRIX HUB - FINAL FIXED
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- 1. MODULOK BETÖLTÉSE (Globális táblákba, hogy lássák egymást)
 local BaseURL = "https://raw.githubusercontent.com/walterblack-lab/silent/main/"
 
--- Először az Environment, mert ebben vannak a beállítások
+-- MODULOK BETÖLTÉSE
 getgenv().Environment = loadstring(game:HttpGet(BaseURL .. "Environment.lua"))()
--- Másodjára a MathUtils
 getgenv().MathUtils = loadstring(game:HttpGet(BaseURL .. "MathUtils.lua"))()
--- Utoljára a Hooks
 getgenv().Hooks = loadstring(game:HttpGet(BaseURL .. "Hooks.lua"))()
 
--- 2. RENDSZER INDÍTÁSA
-if MathUtils and Hooks then
-    MathUtils.InitESP() 
-    Hooks.Init()
-else
-    warn("Hiba: Modulok nem tolthetok be!")
+-- RENDSZER INDÍTÁSA
+if getgenv().MathUtils and getgenv().Hooks then
+    getgenv().MathUtils.InitESP() 
+    getgenv().Hooks.Init()
 end
 
--- 3. UI LÉTREHOZÁSA
 local Window = Rayfield:CreateWindow({
     Name = "MATRIX HUB | SILENT AIM",
     LoadingTitle = "Modular System Loading...",
@@ -59,9 +52,8 @@ VisualTab:CreateToggle({
 SettingsTab:CreateButton({
     Name = "Destroy Script (Clean Unload)",
     Callback = function()
-        if Hooks then Hooks.Disable() end
-        if Environment then Environment.Cleanup() end
+        if getgenv().Hooks then getgenv().Hooks.Disable() end
+        if getgenv().Environment then getgenv().Environment.Cleanup() end
         Rayfield:Destroy()
-        print("Matrix Hub Unloaded Successfully.")
     end,
 })
