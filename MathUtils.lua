@@ -2,89 +2,53 @@
 local MathUtils = {}
 local LP = game:GetService("Players").LocalPlayer
 local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
 local ESP_Dots = {}
 
 function MathUtils.CreateESP(player)
     if player == LP then return end
-    
     local dot = Drawing.new("Circle")
     dot.Visible = false
     dot.Color = Color3.fromRGB(255, 0, 0)
-    dot.Thickness = 1
     dot.Radius = 4
     dot.Filled = true
-    dot.NumSides = 12
     
     ESP_Dots[player] = dot
 
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if player.Character and player.Character:FindFirstChild("Head") and _G.HeadESP then
-            local head = player.Character.Head
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            
-            if onScreen then
-                dot.Position = Vector2.new(screenPos.X, screenPos.Y)
-                dot.Visible = true
-            else
-                dot.Visible = false
-            end
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if player.Character and player.Character:FindFirstChild("Head") and (_G.HeadESP or true) then
+            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+            dot.Visible = onScreen
+            dot.Position = Vector2.new(screenPos.X, screenPos.Y)
         else
             dot.Visible = false
-            if not player.Parent then
-                dot:Remove()
-                ESP_Dots[player] = nil
-                connection:Disconnect()
-            end
         end
     end)
 end
 
 function MathUtils.InitESP()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        MathUtils.CreateESP(player)
-    end
-    game.Players.PlayerAdded:Connect(function(player)
-        MathUtils.CreateESP(player)
-    end)
+    for _, p in pairs(game.Players:GetPlayers()) do MathUtils.CreateESP(p) end
+    game.Players.PlayerAdded:Connect(MathUtils.CreateESP)
 end
 
 function MathUtils.ClearESP()
-    for player, dot in pairs(ESP_Dots) do
-        pcall(function() dot:Remove() end)
-    end
+    for _, d in pairs(ESP_Dots) do d:Remove() end
     table.clear(ESP_Dots)
 end
 
-function MathUtils.IsVisible(targetPart, character)
-    if not _G.WallCheck then return true end
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {LP.Character, character, Camera}
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    local result = workspace:Raycast(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position).Unit * 1000, params)
-    return result == nil
-end
-
 function MathUtils.GetClosestTarget()
-    local closestTarget = nil
-    local maxDistance = _G.FOVRadius or 150
-    local mousePos = Vector2.new(LP:GetMouse().X, LP:GetMouse().Y)
-
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LP and player.Character and player.Character:FindFirstChild("Head") then
-            local head = player.Character.Head
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                local distToMouse = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                if distToMouse < maxDistance and MathUtils.IsVisible(head, player.Character) then
-                    maxDistance = distToMouse
-                    closestTarget = head
-                end
+    local target = nil
+    local dist = _G.FOVRadius or 150
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(LP:GetMouse().X, LP:GetMouse().Y)).Magnitude
+            if vis and mag < dist then
+                dist = mag
+                target = p.Character.Head
             end
         end
     end
-    return closestTarget
+    return target
 end
 
 return MathUtils
