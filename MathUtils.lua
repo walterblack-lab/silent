@@ -4,24 +4,24 @@ local LP = game:GetService("Players").LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
-local ESP_Table = {} -- Ebben tároljuk a pöttyöket
+local ESP_Dots = {}
 
--- 1. HEAD ESP LÉTREHOZÁSA ÉS FRISSÍTÉSE
+-- 1. HEAD ESP
 function MathUtils.CreateESP(player)
     local dot = Drawing.new("Circle")
     dot.Visible = false
-    dot.Color = Color3.fromRGB(255, 0, 0) -- Piros
+    dot.Color = Color3.fromRGB(255, 0, 0)
     dot.Thickness = 1
-    dot.Radius = 3 -- Pici pötty
+    dot.Radius = 3
     dot.Filled = true
-    dot.NumSides = 12 -- Hogy ne egye az FPS-t, kevés oldal elég
+    dot.NumSides = 12
     
+    ESP_Dots[player] = dot
+
     local connection
     connection = RunService.RenderStepped:Connect(function()
         if player.Character and player.Character:FindFirstChild("Head") and _G.HeadESP and player.Character.Humanoid.Health > 0 then
-            local head = player.Character.Head
-            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            
+            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
             if onScreen then
                 dot.Position = Vector2.new(screenPos.X, screenPos.Y)
                 dot.Visible = true
@@ -30,44 +30,42 @@ function MathUtils.CreateESP(player)
             end
         else
             dot.Visible = false
-            if not player.Parent then -- Ha kilép a játékos
+            if not player.Parent then
                 dot:Remove()
+                ESP_Dots[player] = nil
                 connection:Disconnect()
             end
         end
     end)
 end
 
--- Ezt egyszer kell meghívni a main.lua-ban minden játékosra
 function MathUtils.InitESP()
     for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LP then
-            MathUtils.CreateESP(player)
-        end
+        if player ~= LP then MathUtils.CreateESP(player) end
     end
     game.Players.PlayerAdded:Connect(function(player)
-        if player ~= LP then
-            MathUtils.CreateESP(player)
-        end
+        if player ~= LP then MathUtils.CreateESP(player) end
     end)
 end
 
--- 2. LÁTHATÓSÁG ELLENŐRZÉSE (Raycast)
+function MathUtils.ClearESP()
+    for _, dot in pairs(ESP_Dots) do dot:Remove() end
+    table.clear(ESP_Dots)
+end
+
+-- 2. LOGIKA
 function MathUtils.IsVisible(targetPart, character)
     if not _G.WallCheck then return true end
     local origin = Camera.CFrame.Position
     local destination = targetPart.Position
     local direction = (destination - origin).Unit * (destination - origin).Magnitude
-    
     local params = RaycastParams.new()
     params.FilterDescendantsInstances = {LP.Character, character, Camera}
     params.FilterType = Enum.RaycastFilterType.Exclude
-    
     local result = workspace:Raycast(origin, direction, params)
     return result == nil
 end
 
--- 3. TESTRÉSZ RANDOMIZÁLÓ ÉS CÉLPONT KERESŐ
 function MathUtils.GetRandomBodyPart(character)
     local chance = math.random(1, 100)
     if chance <= (_G.HeadChance or 80) then
@@ -99,10 +97,7 @@ function MathUtils.GetClosestTarget()
             end
         end
     end
-    
-    if closestTarget then
-        return MathUtils.GetRandomBodyPart(closestTarget)
-    end
+    if closestTarget then return MathUtils.GetRandomBodyPart(closestTarget) end
     return nil
 end
 
