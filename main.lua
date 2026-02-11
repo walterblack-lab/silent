@@ -1,18 +1,25 @@
--- main.lua | MATRIX HUB - SILENT AIM EDITION
+-- main.lua | MATRIX HUB - SILENT AIM FIXED
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- MODULOK BETÖLTÉSE (A te GitHub repódból)
+-- 1. MODULOK BETÖLTÉSE (Globális táblákba, hogy lássák egymást)
 local BaseURL = "https://raw.githubusercontent.com/walterblack-lab/silent/main/"
 
-local Environment = loadstring(game:HttpGet(BaseURL .. "Environment.lua"))()
-local MathUtils = loadstring(game:HttpGet(BaseURL .. "MathUtils.lua"))()
-local Hooks = loadstring(game:HttpGet(BaseURL .. "Hooks.lua"))()
+-- Először az Environment, mert ebben vannak a beállítások
+getgenv().Environment = loadstring(game:HttpGet(BaseURL .. "Environment.lua"))()
+-- Másodjára a MathUtils
+getgenv().MathUtils = loadstring(game:HttpGet(BaseURL .. "MathUtils.lua"))()
+-- Utoljára a Hooks
+getgenv().Hooks = loadstring(game:HttpGet(BaseURL .. "Hooks.lua"))()
 
--- RENDSZER INDÍTÁSA
-MathUtils.InitESP() -- Elindítja a pici piros pöttyöket
-Hooks.Init()        -- Aktiválja a Silent Aim-et
+-- 2. RENDSZER INDÍTÁSA
+if MathUtils and Hooks then
+    MathUtils.InitESP() 
+    Hooks.Init()
+else
+    warn("Hiba: Modulok nem tolthetok be!")
+end
 
--- UI LÉTREHOZÁSA
+-- 3. UI LÉTREHOZÁSA
 local Window = Rayfield:CreateWindow({
     Name = "MATRIX HUB | SILENT AIM",
     LoadingTitle = "Modular System Loading...",
@@ -23,7 +30,6 @@ local MainTab = Window:CreateTab("Combat")
 local VisualTab = Window:CreateTab("Visuals")
 local SettingsTab = Window:CreateTab("Settings")
 
--- COMBAT BEÁLLÍTÁSOK
 MainTab:CreateToggle({
     Name = "Silent Aim Enabled",
     CurrentValue = _G.SilentAimEnabled,
@@ -38,7 +44,6 @@ MainTab:CreateSlider({
     Callback = function(Value) _G.HeadChance = Value end,
 })
 
--- VISUALS BEÁLLÍTÁSOK
 VisualTab:CreateToggle({
     Name = "Head ESP (Red Dot)",
     CurrentValue = _G.HeadESP,
@@ -51,19 +56,12 @@ VisualTab:CreateToggle({
     Callback = function(Value) _G.ShowFOV = Value end,
 })
 
--- UNLOAD GOMB (A központi vezérlő)
 SettingsTab:CreateButton({
     Name = "Destroy Script (Clean Unload)",
     Callback = function()
-        -- 1. Hooks visszaállítása
-        Hooks.Disable()
-        
-        -- 2. Vizuális elemek (FOV, ESP) takarítása
-        Environment.Cleanup()
-        
-        -- 3. UI bezárása
+        if Hooks then Hooks.Disable() end
+        if Environment then Environment.Cleanup() end
         Rayfield:Destroy()
-        
         print("Matrix Hub Unloaded Successfully.")
     end,
 })
