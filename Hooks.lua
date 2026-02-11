@@ -1,6 +1,6 @@
 -- Hooks.lua | Metatable Hooking for Silent Aim
 local Hooks = {}
-local MathUtils = require(script.Parent.MathUtils) -- Beimportáljuk a matekot
+local MathUtils = getgenv().MathUtils
 local LP = game:GetService("Players").LocalPlayer
 
 -- Eredeti funkciók mentése (hogy vissza tudjuk állítani unloadnál)
