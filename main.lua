@@ -1,27 +1,28 @@
--- main.lua | MATRIX HUB - FINAL FIXED
+-- main.lua | MATRIX HUB - FINAL STABLE
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local BaseURL = "https://raw.githubusercontent.com/walterblack-lab/silent/main/"
 
--- MODULOK BETÖLTÉSE
+-- 1. MODULOK BETÖLTÉSE
 getgenv().Environment = loadstring(game:HttpGet(BaseURL .. "Environment.lua"))()
 getgenv().MathUtils = loadstring(game:HttpGet(BaseURL .. "MathUtils.lua"))()
 getgenv().Hooks = loadstring(game:HttpGet(BaseURL .. "Hooks.lua"))()
 
--- RENDSZER INDÍTÁSA
-if getgenv().MathUtils and getgenv().Hooks then
-    getgenv().MathUtils.InitESP() 
-    getgenv().Hooks.Init()
-end
+-- 2. RENDSZER INDÍTÁSA (Hibakezeléssel)
+pcall(function()
+    if getgenv().MathUtils then getgenv().MathUtils.InitESP() end
+    if getgenv().Hooks then getgenv().Hooks.Init() end
+end)
 
+-- 3. UI LÉTREHOZÁSA
 local Window = Rayfield:CreateWindow({
-    Name = "MATRIX HUB | SILENT AIM",
+    Name = "MATRIX HUB | STREET LIFE",
     LoadingTitle = "Modular System Loading...",
     ConfigurationSaving = { Enabled = false }
 })
 
-local MainTab = Window:CreateTab("Combat")
-local VisualTab = Window:CreateTab("Visuals")
-local SettingsTab = Window:CreateTab("Settings")
+local MainTab = Window:CreateTab("Combat", 4483362458)
+local VisualTab = Window:CreateTab("Visuals", 4483362458)
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
 MainTab:CreateToggle({
     Name = "Silent Aim Enabled",
@@ -56,4 +57,11 @@ SettingsTab:CreateButton({
         if getgenv().Environment then getgenv().Environment.Cleanup() end
         Rayfield:Destroy()
     end,
+})
+
+Rayfield:Notify({
+   Title = "Matrix Hub",
+   Content = "Script loaded successfully!",
+   Duration = 5,
+   Image = 4483362458,
 })
